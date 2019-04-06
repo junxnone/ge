@@ -6,6 +6,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link href="css/min/styles.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+    
 </head>
 
     
@@ -13,7 +15,7 @@
   <div id="panel" style="display: block;">
         <div id="panel-content">
             <div id="panel-title">GeoJSON editor</div>
-            <a href="https://github.com/tomscholz/geojson-editor">View on Github</a>
+            <a href="https://github.com/lyj289/geojson-editor">View on Github</a>
             <hr/>
             <div id="geojson-controls">
                 <button onclick="document.getElementById('geojson-input').select();">Select All</button>
@@ -21,7 +23,7 @@
                     <button>Download</button>
                 </a>
             </div>
-            <textarea id="geojson-input" placeholder="Drag and drop GeoJSON onto the map or paste it here to begin editing."></textarea>
+            <textarea id="geojson-input" placeholder="将 GeoJSON 拖放到地图上或者将其粘贴在此处即可开始编辑。"></textarea>
         </div>
     </div>
     <button style="position: absolute; left:55%; top:1%; z-index: 10000;" onclick="panelToggle();">Toggle Panel</button>
@@ -31,8 +33,11 @@
             <div id="drop-silhouette"></div>
         </div>
     </div>
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBLW6rxS6R6aCGt16qCBq99SDIR3FwjO9M"></script>
-    <script type="text/javascript" src="js/min/editor.min.js"></script>
+    <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=3ZVyLpepil0fs9wbUeLTFVgpg7T9ETk2&s=1"></script>
+    <!--加载鼠标绘制工具-->
+    <script type="text/javascript" src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+
+    <script type="text/javascript" src="js/editor.js"></script>
 </body>
 
 </html>
