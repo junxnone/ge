@@ -1,4 +1,4 @@
-// The Google Map.
+// The Baidu Map.
 var map;
 
 // The HTML element that contains the drop container.
@@ -8,108 +8,6 @@ var geoJsonInput;
 var downloadLink;
 var overlays = [];
 
-BMap.Overlay.prototype.toGeoJson = function() {
-    var geom = {
-        "type": "",
-        "coordinates": []
-    };
-    var feature = {
-        type: 'Feature',
-        properties: {},
-        geometry: geom
-    };
-    if (this instanceof BMap.Polygon) {
-        geom.type = 'Polygon';
-        geom.coordinates = [[]];
-        this.getPath().forEach(k=>{
-            geom.coordinates[0].push([k.lng, k.lat])
-        })
-    } 
-    if (this instanceof BMap.Polyline) {
-        geom.type = 'LineString';
-        this.getPath().forEach(k=>{
-            geom.coordinates.push([k.lng, k.lat])
-        })
-    } 
-    if (this instanceof BMap.Marker) {
-        geom.type = 'Point';
-        let {lng, lat} = this.getPosition()
-        geom.coordinates = [lng, lat]
-    } 
-    return feature
-}
-
-BMap.Map.prototype.polygon = function(coordinates) {
-    var points = coordinates[0].map(k => {
-        return new BMap.Point(...k) 
-    })
-    var polygon = new BMap.Polygon(points, {
-        strokeColor: "red",
-        strokeWeight: 2, 
-        strokeOpacity: 0.5
-    });
-    this.addOverlay(polygon);
-}
-
-BMap.Map.prototype.polyline = function(coordinates) {
-    var points = coordinates.map(k => {
-        return new BMap.Point(...k) 
-    })
-    var polyline = new BMap.Polyline(points, {
-        strokeColor: "blue",
-        strokeWeight: 2, 
-        strokeOpacity: 0.5
-    });
-    this.addOverlay(polyline);
-}
-
-BMap.Map.prototype.point = function(coordinates) {
-    var point = new BMap.Point(...coordinates);
-    var marker = new BMap.Marker(point);
-    this.addOverlay(marker)
-}
-
-BMap.Map.prototype.addFeature = function(feature) {
-    var geom = feature.geometry
-    var type = geom.type;
-    var coordinates = geom.coordinates;
-    if (type === 'Polygon') {
-        this.polygon(coordinates)
-    }
-    if (type === 'LineString') {
-        this.polyline(coordinates)
-    }
-    if (type === 'Point') {
-        this.point(coordinates)
-    }
-}
-
-BMap.Map.prototype.geoJson = function(geojson) {
-    try {
-        var features = (typeof(geojson) !== 'object') 
-            ? JSON.parse(geojson) : geojson;
-        if (features.type === 'FeatureCollection') {
-            features.features.forEach(k => {
-                this.addFeature(k)
-            })
-        }
-        if (features.type === 'Feature') {
-            this.addFeature(features)    
-        }
-        if (features.type === 'Polygon') {
-            this.polygon(features.coordinates)
-        }
-        if (features.type === 'LineString') {
-            this.polyline(features.coordinates)
-        }
-        if (features.type === 'Point') {
-            this.point(features.coordinates)
-        }
-    } catch (error) {
-        
-        return;
-    }
-}
 function init() {
     map = new BMap.Map("map-holder");
     map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);
