@@ -6,20 +6,123 @@ var dropContainer;
 var panel;
 var geoJsonInput;
 var downloadLink;
+var overlays = [];
 
+BMap.Overlay.prototype.toGeoJson = function() {
+    var geom = {
+        "type": "",
+        "coordinates": []
+    };
+    var feature = {
+        type: 'Feature',
+        properties: {},
+        geometry: geom
+    };
+    if (this instanceof BMap.Polygon) {
+        geom.type = 'Polygon';
+        geom.coordinates = [[]];
+        this.getPath().forEach(k=>{
+            geom.coordinates[0].push([k.lng, k.lat])
+        })
+    } 
+    if (this instanceof BMap.Polyline) {
+        geom.type = 'LineString';
+        this.getPath().forEach(k=>{
+            geom.coordinates.push([k.lng, k.lat])
+        })
+    } 
+    if (this instanceof BMap.Marker) {
+        geom.type = 'Point';
+        let {lng, lat} = this.getPosition()
+        geom.coordinates = [lng, lat]
+    } 
+    return feature
+}
+
+BMap.Map.prototype.polygon = function(coordinates) {
+    var points = coordinates[0].map(k => {
+        return new BMap.Point(...k) 
+    })
+    var polygon = new BMap.Polygon(points, {
+        strokeColor: "red",
+        strokeWeight: 2, 
+        strokeOpacity: 0.5
+    });
+    this.addOverlay(polygon);
+}
+
+BMap.Map.prototype.polyline = function(coordinates) {
+    var points = coordinates.map(k => {
+        return new BMap.Point(...k) 
+    })
+    var polyline = new BMap.Polyline(points, {
+        strokeColor: "blue",
+        strokeWeight: 2, 
+        strokeOpacity: 0.5
+    });
+    this.addOverlay(polyline);
+}
+
+BMap.Map.prototype.point = function(coordinates) {
+    var point = new BMap.Point(...coordinates);
+    var marker = new BMap.Marker(point);
+    this.addOverlay(marker)
+}
+
+BMap.Map.prototype.addFeature = function(feature) {
+    var geom = feature.geometry
+    var type = geom.type;
+    var coordinates = geom.coordinates;
+    if (type === 'Polygon') {
+        this.polygon(coordinates)
+    }
+    if (type === 'LineString') {
+        this.polyline(coordinates)
+    }
+    if (type === 'Point') {
+        this.point(coordinates)
+    }
+}
+
+BMap.Map.prototype.geoJson = function(geojson) {
+    try {
+        var features = (typeof(geojson) !== 'object') 
+            ? JSON.parse(geojson) : geojson;
+        if (features.type === 'FeatureCollection') {
+            features.features.forEach(k => {
+                this.addFeature(k)
+            })
+        }
+        if (features.type === 'Feature') {
+            this.addFeature(features)    
+        }
+        if (features.type === 'Polygon') {
+            this.polygon(features.coordinates)
+        }
+        if (features.type === 'LineString') {
+            this.polyline(features.coordinates)
+        }
+        if (features.type === 'Point') {
+            this.point(features.coordinates)
+        }
+    } catch (error) {
+        
+        return;
+    }
+}
 function init() {
-    // 百度地图API功能
-    map = new BMap.Map("map-holder");    // 创建Map实例
-    map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);  // 初始化地图,设置中心点坐标和地图级别
-    //添加地图类型控件
+    map = new BMap.Map("map-holder");
+    map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);
     map.addControl(new BMap.MapTypeControl({
         mapTypes:[
             BMAP_NORMAL_MAP,
             BMAP_HYBRID_MAP
-        ]}));     
-    map.setCurrentCity("北京");          // 设置地图显示的城市 此项是必须设置的
-    map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
+        ],
+        anchor: BMAP_ANCHOR_BOTTOM_RIGHT
 
+    }));
+
+    map.enableScrollWheelZoom(true);
 
     bindDataLayerListeners();
 
@@ -29,9 +132,6 @@ function init() {
     var mapContainer = document.getElementById('map-holder');
     geoJsonInput = document.getElementById('geojson-input');
     downloadLink = document.getElementById('download-link');
-
-    // Resize the geoJsonInput textarea.
-    resizeGeoJsonInput();
 
     // Set up the drag and drop events.
     // First on common events.
@@ -57,9 +157,6 @@ function init() {
         'input',
         refreshDownloadLinkFromGeoJson);
 
-    // Set up events for styling.
-    addDomListener(window, 'resize', resizeGeoJsonInput);
-
     addDrawingTool(map);
 }
 function addDomListener(element, type, callback){
@@ -68,10 +165,6 @@ function addDomListener(element, type, callback){
 addDomListener(window, 'load', init);
 
 function addDrawingTool(map){
-    var overlays = [];
-    var overlaycomplete = function(e){
-        overlays.push(e.overlay);
-    };
     var styleOptions = {
         strokeColor:"red",    //边线颜色。
         fillColor:"red",      //填充颜色。当参数为空时，圆形将没有填充效果。
@@ -94,29 +187,36 @@ function addDrawingTool(map){
         rectangleOptions: styleOptions //矩形的样式
     });  
      //添加鼠标绘制工具监听事件，用于获取绘制结果
-    drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+    drawingManager.addEventListener('overlaycomplete', refreshGeoJsonFromData);
 
 }
-// Refresh different components from other components.
-function refreshGeoJsonFromData() {
-    map.data.toGeoJson(function(geoJson) {
-        geoJsonInput.value = JSON.stringify(geoJson, null, 2);
-        refreshDownloadLinkFromGeoJson();
-    });
+function overlay2GeoJson(overlays) {
+    var features = [];
+    var featureCollection = {
+        'type': 'FeatureCollection',
+        'features': features
+    }
+    overlays.forEach(k => {
+        var feature = k.toGeoJson();
+        features.push(feature);
+    })
+    return featureCollection;
+}
+
+// 将overlay转化为geojson
+function refreshGeoJsonFromData(e) {
+    overlays.push(e.overlay);
+    var jsonstr = overlay2GeoJson(overlays);
+    geoJsonInput.value = JSON.stringify(jsonstr, null, 4);
+    refreshDownloadLinkFromGeoJson();
 }
 
 // Replace the data layer with a new one based on the inputted geoJson.
 function refreshDataFromGeoJson() {
-    var newData = new google.maps.Data({
-        map: map,
-        style: map.data.getStyle(),
-        controls: ['Point', 'LineString', 'Polygon']
-    });
     try {
-        var userObject = JSON.parse(geoJsonInput.value);
-        var newFeatures = newData.addGeoJson(userObject);
+        map.clearOverlays();
+        map.geoJson(geoJsonInput.value);
     } catch (error) {
-        newData.setMap(null);
         if (geoJsonInput.value !== "") {
             setGeoJsonValidity(false);
         } else {
@@ -124,15 +224,9 @@ function refreshDataFromGeoJson() {
         }
         return;
     }
-    // No error means GeoJSON was valid!
-    map.data.setMap(null);
-    map.data = newData;
-    bindDataLayerListeners(newData);
-    setGeoJsonValidity(true);
-
-
-
     
+    bindDataLayerListeners();
+    setGeoJsonValidity(true);
 }
 
 // Refresh download link.
@@ -181,7 +275,9 @@ function handleDrop(e) {
         for (var i = 0, file; file = files[i]; i++) {
             var reader = new FileReader();
             reader.onload = function(e) {
-                map.data.addGeoJson(JSON.parse(e.target.result));
+                map.geoJson(e.target.result);
+                geoJsonInput.value = e.target.result;
+
             };
             reader.onerror = function(e) {
                 console.error('reading failed');
@@ -193,21 +289,13 @@ function handleDrop(e) {
         // grab the plain text version of the data
         var plainText = e.dataTransfer.getData('text/plain');
         if (plainText) {
-            map.data.addGeoJson(JSON.parse(plainText));
+            map.geoJson(JSON.parse(plainText));
+            geoJsonInput.value = plainText;
         }
     }
     // prevent drag event from bubbling further
     return false;
 }
-
-// Styling related functions
-function resizeGeoJsonInput() {
-    var geoJsonInputRect = geoJsonInput.getBoundingClientRect();
-    var panelRect = panel.getBoundingClientRect();
-    geoJsonInput.style.height = panelRect.bottom - geoJsonInputRect.top - 8 + "px";
-}
-
-// Custom JS by tomscholz
 
 var mapResized = false;
 
@@ -233,7 +321,7 @@ function changeWidth(id) {
 
 // Resize the map
 function resizeMap(map) {
-    google.maps.event.trigger(map, 'resize');
+    map.dispatchEvent('resize');
     mapResized = true;
 }
 
@@ -243,8 +331,3 @@ function panelToggle() {
     changeWidth('map-container');
     resizeMap(map);
 }
-
-// Alert on unload
-window.onbeforeunload = function() {
-    return 'Are you sure you want to leave?';
-};

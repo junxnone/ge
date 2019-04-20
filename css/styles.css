@@ -64,6 +64,7 @@ body {
 }
 #panel-content {
     padding: 8.5px;
+    height: 100%;
 }
 #geojson-controls {
     padding-bottom: 8px;
@@ -79,6 +80,7 @@ body {
     border: none;
     resize: none;
     background-color: #F1F1F1;
+    height: calc(100% - 100px);
 }
 #panel-title {
     font-size: 20px;
@@ -97,4 +99,20 @@ hr {
 }
 #geojson-input.invalid {
     background-color: #FAC6C0;
+}
+
+.btn {
+    display: inline-block;
+    padding: 4px 10px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
