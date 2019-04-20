@@ -88,7 +88,7 @@ BMap.Map.prototype.point = function(coordinates) {
 /**
  * add point feature
  * @param  {object} coordinates geojson.feature
- * @return {BMap.Marker}             
+ * @return {BMap.Overlay}             
  */
 BMap.Map.prototype.addFeature = function(feature) {
     var geom = feature.geometry
