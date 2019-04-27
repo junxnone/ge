@@ -95,7 +95,7 @@ function overlay2GeoJson(overlays) {
         'features': features
     }
     overlays.forEach(k => {
-        var feature = k.toGeoJson();
+        var feature = k.toGeoJSON();
         features.push(feature);
     })
     return featureCollection;
@@ -113,7 +113,7 @@ function refreshGeoJsonFromData(e) {
 function refreshDataFromGeoJson() {
     try {
         map.clearOverlays();
-        map.geoJson(geoJsonInput.value);
+        map.geoJSON(geoJsonInput.value);
     } catch (error) {
         if (geoJsonInput.value !== "") {
             setGeoJsonValidity(false);
