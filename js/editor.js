@@ -10,7 +10,7 @@ var overlays = [];
 
 function init() {
     map = new BMap.Map("map-holder");
-    map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);
+    map.centerAndZoom(new BMap.Point(121.325, 31.142), 11);
     map.addControl(new BMap.MapTypeControl({
         mapTypes:[
             BMAP_NORMAL_MAP,
